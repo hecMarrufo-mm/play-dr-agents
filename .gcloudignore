@@ -1,0 +1,28 @@
+# What NOT to upload to Cloud Build when running `gcloud run deploy --source .`
+# (The Docker build installs deps and builds from source itself.)
+
+.git
+node_modules
+**/node_modules
+dist
+**/dist
+
+# Never upload local secrets or data
+.env
+.env.*
+!.env.example
+data
+uploads
+
+# Service-account keys / credentials
+*service-account*.json
+*-key.json
+*.pem
+play-service-account-key.json
+
+# Misc
+*.log
+.DS_Store
+.vscode
+.idea
+deploy/.secrets.env

@@ -1,0 +1,41 @@
+{
+  "name": "collective-brain",
+  "version": "1.0.0",
+  "description": "Collective Brain — a shared, multi-user chat platform for custom Gemini agents.",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:client": "npm -w client run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "npm -w client run build",
+    "build:server": "npm -w server run build",
+    "start": "node server/dist/index.js",
+    "typecheck": "npm -w server run typecheck && npm -w client run typecheck",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "backfill:extract": "tsx server/src/scripts/backfill-extract.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "prisma": "^5.22.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

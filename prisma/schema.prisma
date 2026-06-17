@@ -1,0 +1,149 @@
+// Collective Brain — Prisma schema
+// PostgreSQL (Cloud SQL compatible). Generate the client with `prisma generate`
+// and create/apply migrations with `prisma migrate dev` / `prisma migrate deploy`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+/// A Monks Workspace user, auto-provisioned on first OAuth login.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agents          Agent[]
+  coOwnedAgents   AgentOwner[]
+  files           File[]
+  messages        Message[]
+  glossaryEntries GlossaryEntry[]
+
+  @@map("users")
+}
+
+/// A custom agent (ported Gemini "Gem"). Visible to everyone; editable by its owner only.
+model Agent {
+  id           String   @id @default(cuid())
+  title        String
+  description  String   @default("")
+  instructions String   @db.Text // system prompt
+  model        String? // Gemini model id; null => server default (GEMINI_MODEL)
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner    User         @relation(fields: [ownerId], references: [id])
+  coOwners AgentOwner[]
+  files    AgentFile[]
+  messages Message[]
+
+  @@index([ownerId])
+  @@index([updatedAt])
+  @@map("agents")
+}
+
+/// An uploaded file in the shared, platform-wide library. Reusable by every user.
+model File {
+  id         String   @id @default(cuid())
+  filename      String
+  mimeType      String
+  size          Int
+  storageKey    String // key/path within the configured storage backend
+  extractedText String? @db.Text // parsed markdown/text used as LLM context (null = binary/image)
+  uploaderId    String
+  createdAt  DateTime @default(now())
+
+  uploader User        @relation(fields: [uploaderId], references: [id])
+  agents   AgentFile[]
+
+  @@index([uploaderId])
+  @@map("files")
+}
+
+/// Join table linking agents to the shared files they reference.
+model AgentFile {
+  agentId   String
+  fileId    String
+  createdAt DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  file  File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, fileId])
+  @@index([fileId])
+  @@map("agent_files")
+}
+
+/// Additional owners ("co-owners") of an agent, beyond the primary owner (Agent.ownerId).
+/// Co-owners can edit, delete, and manage the agent; the primary owner remains for attribution.
+model AgentOwner {
+  agentId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, userId])
+  @@index([userId])
+  @@map("agent_owners")
+}
+
+/// A single message in an agent's shared, append-only conversation thread.
+/// authorId is null for ASSISTANT messages (the agent speaking).
+model Message {
+  id                   String      @id @default(cuid())
+  agentId              String
+  authorId             String?
+  role                 MessageRole
+  content              String      @db.Text
+  /// IDs of prior messages the author explicitly included as context for this prompt.
+  referencedMessageIds String[]    @default([])
+  createdAt            DateTime    @default(now())
+
+  agent  Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([agentId, createdAt])
+  @@map("messages")
+}
+
+/// The Localizer tool's shared, learning dictionary: a preferred translation for
+/// a source term in a target language. Built up from inline corrections so the
+/// whole team benefits (e.g. en "car" -> es must be "carro", not "auto").
+model GlossaryEntry {
+  id                   String   @id @default(cuid())
+  sourceTerm           String
+  sourceTermLower      String // normalized for matching + uniqueness
+  targetLang           String // BCP-47 code, e.g. es-ES
+  preferredTranslation String
+  note                 String   @default("")
+  createdById          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@unique([sourceTermLower, targetLang])
+  @@index([targetLang])
+  @@map("glossary_entries")
+}

@@ -1,0 +1,29 @@
+node_modules/
+dist/
+build/
+*.log
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Service-account keys / credentials — NEVER commit these
+*service-account*.json
+*-key.json
+*.pem
+play-service-account-key.json
+
+# Local file storage (dev)
+data/
+uploads/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Prisma generated client (regenerated on install)
+client/node_modules/
+server/node_modules/

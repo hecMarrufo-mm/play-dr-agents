@@ -1,0 +1,57 @@
+# ---------------------------------------------------------------------------
+# Collective Brain — LOCAL DEVELOPMENT compose
+#
+# This brings up a local Postgres 16 that matches the dev DATABASE_URL in
+# .env.example (postgresql://collective:collective@localhost:5432/collective).
+#
+# Normal dev workflow:
+#   1. docker compose up -d        # start Postgres in the background
+#   2. npm run dev                 # run the app on your host (NOT in compose)
+#
+# The "app" service below is intentionally commented out and kept only as
+# documentation for how the full production container would run under compose.
+# ---------------------------------------------------------------------------
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: collective-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: collective
+      POSTGRES_PASSWORD: collective
+      POSTGRES_DB: collective
+    ports:
+      - "5432:5432"
+    volumes:
+      - collective-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collective"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------------------------
+  # Optional: run the full production container under compose.
+  # Uncomment to build the image (see Dockerfile) and run the bundled
+  # SPA + API server. For day-to-day development prefer `npm run dev`.
+  #
+  # IMPORTANT — when the app runs INSIDE compose it reaches Postgres over the
+  # compose network, so the DATABASE_URL host must be "db", NOT "localhost":
+  #   DATABASE_URL=postgresql://collective:collective@db:5432/collective?schema=public
+  # Also set real GOOGLE_* / GEMINI_API_KEY values in your .env — the
+  # placeholders shipped in .env.example will not authenticate.
+  # -------------------------------------------------------------------------
+  # app:
+  #   build: .
+  #   container_name: collective-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   env_file: .env
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+volumes:
+  collective-db-data:

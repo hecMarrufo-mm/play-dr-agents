@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+data
+uploads
+*.log
+.DS_Store
+README.md
+docker-compose.yml
