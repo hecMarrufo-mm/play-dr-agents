@@ -45,8 +45,8 @@ type AgentFileWithFile = {
 
 const agentInput = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
-  description: z.string().max(4000).default(''),
-  instructions: z.string().min(1, 'Instructions are required').max(50_000),
+  description: z.string().trim().min(1, 'Description is required').max(4000),
+  instructions: z.string().trim().min(1, 'Instructions are required').max(50_000),
   fileIds: z.array(z.string()).max(50).default([]),
   model: z
     .string()

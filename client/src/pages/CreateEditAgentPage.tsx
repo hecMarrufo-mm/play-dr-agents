@@ -38,6 +38,7 @@ export default function CreateEditAgentPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canSave, setCanSave] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,6 +83,13 @@ export default function CreateEditAgentPage() {
       cancelled = true;
     };
   }, [id, isEdit, user, navigate]);
+
+  useEffect(() => {
+    const hasTitle = title.trim().length > 0;
+    const hasDescription = description.trim().length > 0;
+    const hasInstructions = instructions.trim().length > 0;
+    setCanSave(!saving && hasTitle && hasDescription && hasInstructions);
+  }, [saving, title, description, instructions]);
 
   function toggleFile(fileId: string) {
     setFileIds((prev) =>
@@ -143,8 +151,6 @@ export default function CreateEditAgentPage() {
       </div>
     );
   }
-
-  const canSave = !saving && title.trim().length > 0;
 
   return (
     <div className="page">
